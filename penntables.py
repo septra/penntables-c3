@@ -1,20 +1,4 @@
-# Function to transform the Penn World Tables into json acceptable by NVD3
-# Returns an appropriate json string
-def transform_nvd3(frame, key_column, x_column, y_column):
-    import json
-    data = []
-    for key in frame[key_column].unique():
-        holder = {"key": key}
-        holder.update(
-            {
-                "values": [
-                    [x, y] for x, y in zip(frame[x_column], frame[y_column])
-                ]
-            }
-        )
-        data.append(holder)
-    return json.dumps(data, sort_keys=True)
-
+import pandas as pd
 
 def transform(frame, key_column, x_column, y_column):
     import json
@@ -32,3 +16,20 @@ def transform(frame, key_column, x_column, y_column):
         )
     data = {"xs" : xs, "columns" : columns}
     return json.dumps(data, indent = 2)
+
+penn = pd.read_csv('./PennTablesGA.csv')
+
+files = {var: dataframe for var, dataframe in
+            zip(
+                penn['VariableCode'].unique(),
+                map(
+                    lambda x: penn.loc[penn['VariableCode'] == x],
+                    penn['VariableCode'].unique()
+                )
+            )
+        }
+
+# Iterate over filenames and save corresponding dataframes to json files.
+for fname, dataframe in files.items():
+    with open(str(fname) + ".json", 'wb') as f:
+        f.write(transform(dataframe, "RegionCode", "YearCode", "AggValue"))
